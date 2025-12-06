@@ -1,0 +1,1 @@
+idol-otaku-mbti-quiz
