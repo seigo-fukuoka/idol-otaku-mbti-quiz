@@ -96,29 +96,23 @@ export const ResultPage = ({ result, onRestart }: ResultPageProps) => {
   }, [result]);
 
   const handleDownloadImage = async () => {
-    if (!resultRef.current) return;
-
     try {
       setIsDownloading(true);
-      const dataUrl = await toPng(resultRef.current, {
-        quality: 1,
-        pixelRatio: 2,
-      });
+
+      // キャラクター画像を取得
+      const imageResponse = await fetch(result.imageUrl);
+      const imageBlob = await imageResponse.blob();
+      const imageFile = new File([imageBlob], `idol-otaku-${result.id}.png`, { type: 'image/png' });
 
       // Web Share API対応デバイス（iOS Safari、Android Chrome等）: Web Share APIを使用
       if (navigator.share && navigator.canShare) {
-        // Data URLをBlobに変換
-        const response = await fetch(dataUrl);
-        const blob = await response.blob();
-        const file = new File([blob], `otaku-mbti-${result.id}.png`, { type: 'image/png' });
-
         const shareData: ShareData & { files?: File[] } = {
           title: `アイドルオタク診断結果: ${result.name}`,
         };
 
         // ファイル共有がサポートされているか確認
-        if (navigator.canShare({ ...shareData, files: [file] } as ShareData & { files: File[] })) {
-          shareData.files = [file];
+        if (navigator.canShare({ ...shareData, files: [imageFile] } as ShareData & { files: File[] })) {
+          shareData.files = [imageFile];
         }
 
         try {
@@ -127,25 +121,29 @@ export const ResultPage = ({ result, onRestart }: ResultPageProps) => {
           // ユーザーがキャンセルした場合やファイル共有ができない場合はフォールバック
           if ((shareError as Error).name !== 'AbortError') {
             // フォールバック: 従来の方法
+            const imageUrl = URL.createObjectURL(imageBlob);
             const link = document.createElement('a');
-            link.download = `otaku-mbti-${result.id}.png`;
-            link.href = dataUrl;
+            link.download = `idol-otaku-${result.id}.png`;
+            link.href = imageUrl;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            URL.revokeObjectURL(imageUrl);
           }
         }
       } else {
         // その他のブラウザ: 従来の方法
+        const imageUrl = URL.createObjectURL(imageBlob);
         const link = document.createElement('a');
-        link.download = `otaku-mbti-${result.id}.png`;
-        link.href = dataUrl;
+        link.download = `idol-otaku-${result.id}.png`;
+        link.href = imageUrl;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(imageUrl);
       }
     } catch (error) {
-      console.error('Error generating image:', error);
+      console.error('Error downloading image:', error);
     } finally {
       setIsDownloading(false);
     }
