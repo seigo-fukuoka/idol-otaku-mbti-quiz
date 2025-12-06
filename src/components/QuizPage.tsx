@@ -108,7 +108,7 @@ export const QuizPage = ({ onComplete }: QuizPageProps) => {
                   </p>
                 </div>
 
-                <div className="flex justify-between items-center gap-2">
+                <div className="flex justify-between items-center gap-1">
                   {ratingLabels.map((rating) => (
                     <div key={rating.value} className="flex flex-col items-center gap-2 flex-1">
                       <motion.button
@@ -130,15 +130,11 @@ export const QuizPage = ({ onComplete }: QuizPageProps) => {
                           <span className="text-white font-bold">✓</span>
                         )}
                       </motion.button>
-                      <span className="text-xs text-gray-600 text-center hidden md:block">
+                      <span className="text-[10px] md:text-xs text-gray-600 text-center leading-tight px-0.5">
                         {rating.label}
                       </span>
                     </div>
                   ))}
-                </div>
-                <div className="flex justify-between mt-2 md:hidden">
-                  <span className="text-xs text-gray-500">同意しない</span>
-                  <span className="text-xs text-gray-500">同意する</span>
                 </div>
               </div>
             ))}

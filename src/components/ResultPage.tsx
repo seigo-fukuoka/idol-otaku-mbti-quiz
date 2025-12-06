@@ -22,10 +22,45 @@ export const ResultPage = ({ result, onRestart }: ResultPageProps) => {
         pixelRatio: 2,
       });
 
-      const link = document.createElement('a');
-      link.download = `otaku-mbti-${result.id}.png`;
-      link.href = dataUrl;
-      link.click();
+      // Web Share API対応デバイス（iOS Safari、Android Chrome等）: Web Share APIを使用
+      if (navigator.share && navigator.canShare) {
+        // Data URLをBlobに変換
+        const response = await fetch(dataUrl);
+        const blob = await response.blob();
+        const file = new File([blob], `otaku-mbti-${result.id}.png`, { type: 'image/png' });
+
+        const shareData: ShareData & { files?: File[] } = {
+          title: `アイドルオタク診断結果: ${result.name}`,
+        };
+
+        // ファイル共有がサポートされているか確認
+        if (navigator.canShare({ ...shareData, files: [file] } as ShareData & { files: File[] })) {
+          shareData.files = [file];
+        }
+
+        try {
+          await navigator.share(shareData);
+        } catch (shareError) {
+          // ユーザーがキャンセルした場合やファイル共有ができない場合はフォールバック
+          if ((shareError as Error).name !== 'AbortError') {
+            // フォールバック: 従来の方法
+            const link = document.createElement('a');
+            link.download = `otaku-mbti-${result.id}.png`;
+            link.href = dataUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }
+        }
+      } else {
+        // その他のブラウザ: 従来の方法
+        const link = document.createElement('a');
+        link.download = `otaku-mbti-${result.id}.png`;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     } catch (error) {
       console.error('Error generating image:', error);
     } finally {
@@ -33,11 +68,56 @@ export const ResultPage = ({ result, onRestart }: ResultPageProps) => {
     }
   };
 
-  const handleShareX = () => {
+  const handleShareX = async () => {
+    if (!resultRef.current) return;
+
     const text = `私のアイドルオタク診断結果は「${result.name}」でした！\n${result.catchphrase}\n\n診断してみよう 👉`;
     const url = window.location.origin;
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-    window.open(twitterUrl, '_blank');
+
+    try {
+      // 画像を生成
+      const dataUrl = await toPng(resultRef.current, {
+        quality: 1,
+        pixelRatio: 2,
+      });
+
+      // Web Share APIが利用可能で、画像を共有できる場合
+      if (navigator.share && navigator.canShare) {
+        const response = await fetch(dataUrl);
+        const blob = await response.blob();
+        const file = new File([blob], `otaku-mbti-${result.id}.png`, { type: 'image/png' });
+
+        const shareData: ShareData & { files?: File[] } = {
+          title: `アイドルオタク診断結果: ${result.name}`,
+          text: text,
+          url: url,
+        };
+
+        // ファイル共有がサポートされているか確認
+        if (navigator.canShare({ ...shareData, files: [file] } as ShareData & { files: File[] })) {
+          shareData.files = [file];
+        }
+
+        try {
+          await navigator.share(shareData);
+          return;
+        } catch (shareError) {
+          // ユーザーがキャンセルした場合などはエラーを無視してフォールバック
+          if ((shareError as Error).name === 'AbortError') {
+            return;
+          }
+        }
+      }
+
+      // Web Share APIが使えない場合のフォールバック: Twitter URL
+      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+      window.open(twitterUrl, '_blank');
+    } catch (error) {
+      console.error('Error sharing:', error);
+      // エラー時もフォールバック
+      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+      window.open(twitterUrl, '_blank');
+    }
   };
 
   return (
