@@ -69,24 +69,17 @@ export const ResultPage = ({ result, onRestart }: ResultPageProps) => {
   };
 
   const handleShareX = async () => {
-    if (!resultRef.current) return;
-
     const text = `私のアイドルオタク診断結果は「${result.name}」でした！\n${result.catchphrase}\n\n診断してみよう 👉`;
     const url = window.location.origin;
 
     try {
-      // 画像を生成
-      const dataUrl = await toPng(resultRef.current, {
-        quality: 1,
-        pixelRatio: 2,
-      });
+      // キャラクター画像を取得
+      const imageResponse = await fetch(result.imageUrl);
+      const imageBlob = await imageResponse.blob();
+      const imageFile = new File([imageBlob], `idol-otaku-${result.id}.png`, { type: 'image/png' });
 
       // Web Share APIが利用可能で、画像を共有できる場合
       if (navigator.share && navigator.canShare) {
-        const response = await fetch(dataUrl);
-        const blob = await response.blob();
-        const file = new File([blob], `otaku-mbti-${result.id}.png`, { type: 'image/png' });
-
         const shareData: ShareData & { files?: File[] } = {
           title: `アイドルオタク診断結果: ${result.name}`,
           text: text,
@@ -94,8 +87,8 @@ export const ResultPage = ({ result, onRestart }: ResultPageProps) => {
         };
 
         // ファイル共有がサポートされているか確認
-        if (navigator.canShare({ ...shareData, files: [file] } as ShareData & { files: File[] })) {
-          shareData.files = [file];
+        if (navigator.canShare({ ...shareData, files: [imageFile] } as ShareData & { files: File[] })) {
+          shareData.files = [imageFile];
         }
 
         try {
@@ -109,12 +102,13 @@ export const ResultPage = ({ result, onRestart }: ResultPageProps) => {
         }
       }
 
-      // Web Share APIが使えない場合のフォールバック: Twitter URL
+      // Web Share APIが使えない場合のフォールバック: Twitter Intent URL
+      // 画像は直接添付できないが、テキストとURLでXアプリを開く
       const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
       window.open(twitterUrl, '_blank');
     } catch (error) {
       console.error('Error sharing:', error);
-      // エラー時もフォールバック
+      // エラー時もフォールバック: Twitter Intent URL
       const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
       window.open(twitterUrl, '_blank');
     }
