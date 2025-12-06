@@ -8,9 +8,9 @@ export interface Question {
 export interface DiagnosisType {
   id: string;
   name: string;
+  catchphrase: string;
   description: string;
   imageUrl: string;
-  traits: string[];
 }
 
 export interface Answer {
