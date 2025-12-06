@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Download, Share2, RefreshCw } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { DiagnosisType } from '../data/types';
@@ -11,6 +11,89 @@ interface ResultPageProps {
 export const ResultPage = ({ result, onRestart }: ResultPageProps) => {
   const resultRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // OGPメタタグを動的に更新
+  useEffect(() => {
+    const url = window.location.origin;
+    const title = `アイドルオタク診断結果: ${result.name}`;
+    const description = `${result.catchphrase}\n${result.description}`;
+    
+    // 画像URLを絶対URLに変換（画像要素から実際のURLを取得）
+    const getImageUrl = (): Promise<string> => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          // 画像が読み込まれたら、そのsrc属性を絶対URLに変換
+          let imageUrl = img.src;
+          if (!imageUrl.startsWith('http')) {
+            // 相対URLの場合は絶対URLに変換
+            if (imageUrl.startsWith('/')) {
+              imageUrl = `${url}${imageUrl}`;
+            } else {
+              imageUrl = `${url}/${imageUrl}`;
+            }
+          }
+          resolve(imageUrl);
+        };
+        img.onerror = () => {
+          // エラー時はデフォルト画像を使用
+          resolve(`${url}/vite.svg`);
+        };
+        // result.imageUrlはimportされた画像なので、そのまま使用
+        img.src = typeof result.imageUrl === 'string' ? result.imageUrl : '';
+      });
+    };
+
+    getImageUrl().then((imageUrl) => {
+
+    // OGPメタタグを更新
+    const updateMetaTag = (property: string, content: string) => {
+      let meta = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement;
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('property', property);
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    };
+
+    const updateMetaTagName = (name: string, content: string) => {
+      let meta = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement;
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('name', name);
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    };
+
+    // タイトルを更新
+    document.title = title;
+
+      // OGPタグを更新
+      updateMetaTag('og:title', title);
+      updateMetaTag('og:description', description);
+      updateMetaTag('og:url', `${url}/result/${result.id}`);
+      if (imageUrl) {
+        updateMetaTag('og:image', imageUrl);
+      }
+      updateMetaTag('og:type', 'website');
+
+      // Twitter Cardタグを更新
+      updateMetaTagName('twitter:card', 'summary_large_image');
+      updateMetaTagName('twitter:title', title);
+      updateMetaTagName('twitter:description', description);
+      if (imageUrl) {
+        updateMetaTagName('twitter:image', imageUrl);
+      }
+    });
+
+    // クリーンアップ関数
+    return () => {
+      // ページを離れる時にデフォルトに戻す（オプション）
+      document.title = 'アイドルオタク診断';
+    };
+  }, [result]);
 
   const handleDownloadImage = async () => {
     if (!resultRef.current) return;
@@ -68,50 +151,14 @@ export const ResultPage = ({ result, onRestart }: ResultPageProps) => {
     }
   };
 
-  const handleShareX = async () => {
-    const text = `私のアイドルオタク診断結果は「${result.name}」でした！\n${result.catchphrase}\n\n診断してみよう 👉`;
+  const handleShareX = () => {
     const url = window.location.origin;
+    const text = `私のアイドルオタク診断結果は「${result.name}」でした！\n${result.catchphrase}\n\n診断してみよう 👉\n${url}`;
 
-    try {
-      // キャラクター画像を取得
-      const imageResponse = await fetch(result.imageUrl);
-      const imageBlob = await imageResponse.blob();
-      const imageFile = new File([imageBlob], `idol-otaku-${result.id}.png`, { type: 'image/png' });
-
-      // Web Share APIが利用可能で、画像を共有できる場合
-      if (navigator.share && navigator.canShare) {
-        const shareData: ShareData & { files?: File[] } = {
-          title: `アイドルオタク診断結果: ${result.name}`,
-          text: text,
-          url: url,
-        };
-
-        // ファイル共有がサポートされているか確認
-        if (navigator.canShare({ ...shareData, files: [imageFile] } as ShareData & { files: File[] })) {
-          shareData.files = [imageFile];
-        }
-
-        try {
-          await navigator.share(shareData);
-          return;
-        } catch (shareError) {
-          // ユーザーがキャンセルした場合などはエラーを無視してフォールバック
-          if ((shareError as Error).name === 'AbortError') {
-            return;
-          }
-        }
-      }
-
-      // Web Share APIが使えない場合のフォールバック: Twitter Intent URL
-      // 画像は直接添付できないが、テキストとURLでXアプリを開く
-      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-      window.open(twitterUrl, '_blank');
-    } catch (error) {
-      console.error('Error sharing:', error);
-      // エラー時もフォールバック: Twitter Intent URL
-      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-      window.open(twitterUrl, '_blank');
-    }
+    // Twitter Intent URLでXアプリを開く
+    // OGP画像が設定されているので、URLをシェアすると自動的に画像が表示される
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(twitterUrl, '_blank');
   };
 
   return (
