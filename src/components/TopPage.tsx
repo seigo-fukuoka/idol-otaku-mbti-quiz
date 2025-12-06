@@ -33,10 +33,10 @@ export const TopPage = ({ onStart }: TopPageProps) => {
           </div>
 
           <h1 className="text-5xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-            オタク版MBTI診断
+            アイドルオタク診断
           </h1>
           <p className="text-xl text-gray-600 mb-2">
-            あなたのオタク気質を診断します
+            あなたの推し活スタイルを診断します
           </p>
           <p className="text-sm text-gray-500">
             全24問・約3分で完了

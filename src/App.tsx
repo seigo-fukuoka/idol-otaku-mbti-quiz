@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TopPage } from './components/TopPage';
 import { QuizPage } from './components/QuizPage';
 import { LoadingPage } from './components/LoadingPage';
@@ -12,6 +12,11 @@ type Page = 'top' | 'quiz' | 'loading' | 'result';
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('top');
   const [diagnosisResult, setDiagnosisResult] = useState<DiagnosisResult | null>(null);
+
+  // ページ遷移時にスクロールをトップに戻す
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
 
   const handleStart = () => {
     setCurrentPage('quiz');

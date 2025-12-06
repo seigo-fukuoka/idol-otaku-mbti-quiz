@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getQuestionsForPage, getTotalPages } from '../data/questions';
@@ -21,6 +21,11 @@ export const QuizPage = ({ onComplete }: QuizPageProps) => {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const totalPages = getTotalPages();
   const questions = getQuestionsForPage(currentPage);
+
+  // クイズページ内でページ遷移したときにスクロールをトップに戻す
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
 
   const handleAnswer = (questionId: number, value: number) => {
     setAnswers({ ...answers, [questionId]: value });

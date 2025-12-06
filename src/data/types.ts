@@ -1,7 +1,7 @@
 export interface Question {
   id: number;
   text: string;
-  dimension: 'IE' | 'SN' | 'TF' | 'JP';
+  dimension: 'axis1' | 'axis2' | 'axis3' | 'axis4';
   direction: 1 | -1;
 }
 
@@ -21,9 +21,9 @@ export interface Answer {
 export interface DiagnosisResult {
   type: DiagnosisType;
   scores: {
-    IE: number;
-    SN: number;
-    TF: number;
-    JP: number;
+    axis1: number;
+    axis2: number;
+    axis3: number;
+    axis4: number;
   };
 }

@@ -4,10 +4,10 @@ import { Answer, DiagnosisResult } from '../data/types';
 
 export const calculateResult = (answers: Answer[]): DiagnosisResult => {
   const scores = {
-    IE: 0,
-    SN: 0,
-    TF: 0,
-    JP: 0,
+    axis1: 0,  // story(+) vs structure(-)
+    axis2: 0,  // community(+) vs solo(-)
+    axis3: 0,  // recognition(+) vs watch(-)
+    axis4: 0,  // center(+) vs balance(-)
   };
 
   answers.forEach((answer) => {
@@ -17,15 +17,16 @@ export const calculateResult = (answers: Answer[]): DiagnosisResult => {
     }
   });
 
-  const typeString = [
-    scores.IE >= 0 ? 'E' : 'I',
-    scores.SN >= 0 ? 'N' : 'S',
-    scores.TF >= 0 ? 'T' : 'F',
-    scores.JP >= 0 ? 'J' : 'P',
-  ].join('');
+  // タイプコード生成
+  const typeCode = [
+    scores.axis1 > 0 ? 'story' : 'structure',
+    scores.axis2 > 0 ? 'community' : 'solo',
+    scores.axis3 > 0 ? 'recognition' : 'watch',
+    scores.axis4 > 0 ? 'center' : 'balance',
+  ].join('-');
 
   return {
-    type: diagnosisTypes[typeString],
+    type: diagnosisTypes[typeCode],
     scores,
   };
 };
